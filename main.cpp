@@ -82,6 +82,7 @@ int storeWireParams(const std::string& filename) {
     unit_wire_res = unit_res;
     unit_wire_cap = unit_cap;
 
+    fin.close();
     return 1;
 
 } 
@@ -110,6 +111,7 @@ int storeInvParams(const std::string& filename) {
     inv_output_cap = second;
     inv_output_res = third;
 
+    fin.close();
     return 1;
 }
 Node* parseTree(const std::string& filename) {
@@ -170,6 +172,8 @@ Node* parseTree(const std::string& filename) {
     root->total_capacitance += inv_output_cap;
     // root is missing capacitance going into it Ce
     return root;
+
+    fin.close();
 }
 
 void preOrderTraversal(Node * node, std::ofstream& fout) {
@@ -206,6 +210,8 @@ int writePre(Node * root, const std::string& filename) {
     }
 
     preOrderTraversal(root, fout);
+
+    fout.close();   // closes the std::ofstream
     return 1;
 }
 
@@ -251,6 +257,7 @@ int elmoreDelay(Node * root, std::string& filename) {
     }
     delayPreOrder(root, 0, inv_output_res, fp);
 
+    fclose(fp);     // closes the FILE* handle
     return 1;
 }  
 
@@ -411,7 +418,7 @@ Node* insertionPostOrder(Node * node, double l) {
             node->elmore_capacitance+=(node->rightWire * unit_wire_cap) / 2;
             node->elmore_capacitance+=node->right->elmore_capacitance;
 
-           // cout << "Polarity of returned temp_right: " << temp_right->polarity << endl;
+            cout << "Polarity of returned temp_right: " << temp_right->polarity << endl;
 
         }
     }
@@ -466,13 +473,13 @@ Node* insertionPostOrder(Node * node, double l) {
             node->elmore_capacitance-=old_child_cap;
 
             node->rightWire = node->right->cut_wire;
-            //cout << "cut wire: " << node->right->cut_wire << endl;
+            cout << "cut wire: " << node->right->cut_wire << endl;
             node->total_capacitance+=(node->rightWire * unit_wire_cap) / 2;
             node->elmore_capacitance+=(node->rightWire * unit_wire_cap) / 2;
             node->elmore_capacitance+=node->right->elmore_capacitance;
 
             node->polarity = inv->polarity;
-           // cout << "Added extra on right.\n";
+            cout << "Added extra on right.\n";
 
         }
         else {
@@ -514,18 +521,20 @@ Node * inverterInsertion(Node * root) {
 
 }
 
-void postOrderTraversalOutput3(Node * node, std::ofstream& fout) {
+void postOrderTraversalOutput3(Node * node, std::ofstream& fout, FILE * fp) {
     if (!node) {
         return;
     }
-    postOrderTraversalOutput3(node->left, fout);
-    postOrderTraversalOutput3(node->right, fout);
+    postOrderTraversalOutput3(node->left, fout, fp);
+    postOrderTraversalOutput3(node->right, fout, fp);
 
     if (node->type==LEAF) {
         fout << node->label << "(" << std::scientific << node->capacitance << ")\n";
         //cout << "Leaf Node total capacitance: " << node->total_capacitance << endl;
         //cout << "Leaf Node elmore capacitance: " << node->elmore_capacitance << endl;
         //cout << "Leaf Node elmore delay: " << node->elmore_delay << endl;
+        fwrite(&(node->label), sizeof(int), 1, fp);
+        fwrite(&(node->capacitance), sizeof(double), 1, fp);
 
 
 
@@ -533,35 +542,78 @@ void postOrderTraversalOutput3(Node * node, std::ofstream& fout) {
         //cout << "Non-Leaf Node total capacitance: " << node->total_capacitance << endl;
         //cout << "Non-Leaf Node elmore capacitance: " << node->elmore_capacitance << endl;
         //cout << "Non-Leaf Node elmore delay: " << node->elmore_delay << endl;
-
+        int i = -1;
+        int j = 0;
+        fwrite(&(i), sizeof(int), 1, fp);
+        fwrite(&(node->leftWire), sizeof(double), 1, fp);
+        fwrite(&(node->rightWire), sizeof(double), 1, fp);
+        fwrite(&(j), sizeof(int), 1, fp);
         fout << "(" << std::scientific << node->leftWire << " " << node->rightWire << " 0)\n";
     } else {
 
+        int i = -1;
+        int j = 1;
+        double neg = -1;
+        fwrite(&(i), sizeof(int), 1, fp);
+        fwrite(&(node->leftWire), sizeof(double), 1, fp);
+        fwrite(&(neg), sizeof(double), 1, fp);
+        fwrite(&(j), sizeof(int), 1, fp);
         fout << "(" << std::scientific << node->leftWire << " " << node->rightWire << " 1)\n";
 
     }
 
 }
 
-int write3rdOutputPost(Node * root, const std::string& filename) {
+int write3rdOutputPost(Node * root, const std::string& filename, const std::string& filename2) {
     std::ofstream fout(filename);
     if (!fout) {
-        cout << "Unable to open file.\n";
+        //cout << "Unable to open file.\n";
         return 0;
     }
 
-    postOrderTraversalOutput3(root, fout);
+    FILE* fp = fopen(filename2.c_str(), "wb");  // convert std::string to const char*
+    if (!fp) {
+        std::cout << "Error: cannot open file\n";
+        return 0;
+    }
+
+    postOrderTraversalOutput3(root, fout, fp);
     fout << "(" << std::scientific << (double) 0 << " " << (double)-1 << " 1)\n";
+    int i = -1;
+    int j = 1;
+    double zero = 0;
+    double neg = -1;
+    fwrite(&(i), sizeof(int), 1, fp);
+    fwrite(&(zero), sizeof(double), 1, fp);
+    fwrite(&(neg), sizeof(double), 1, fp);
+    fwrite(&(j), sizeof(int), 1, fp);
+
     if (root->polarity==0){
         //cout << "here\n";
         fout << "(" << std::scientific << (double) 0 << " " << (double)-1 << " 1)\n";
+        fwrite(&(i), sizeof(int), 1, fp);
+        fwrite(&(zero), sizeof(double), 1, fp);
+        fwrite(&(neg), sizeof(double), 1, fp);
+        fwrite(&(j), sizeof(int), 1, fp);
        
     }
+    fout.close();   // closes the std::ofstream
+    fclose(fp);     // closes the FILE* handle
 
     return 1;
 }
 
+void freeMyTree(Node * node) {
+    if(!node) {
+        return;
+    }
 
+    freeMyTree(node->left);
+    freeMyTree(node->right);
+
+    delete node;
+
+}
 int main(int argc, char **argv) {
     if (argc != 9) {
         std::cout << "Invalid number of arguments";
@@ -599,6 +651,10 @@ int main(int argc, char **argv) {
     //result = writePre(tree, out_name1);
     Node * new_tree =inverterInsertion(tree);
 
-    write3rdOutputPost(new_tree, out_name3);
+    write3rdOutputPost(new_tree, out_name3, out_name4);
     //debugPreStart(tree);
+
+    //freeMyTree(tree);
+    //freeMyTree(new_tree);
+
 }

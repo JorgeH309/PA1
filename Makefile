@@ -32,7 +32,7 @@ run1: $(TARGET)
 
 # Memory check
 testmemory: $(TARGET)
-	$(VAL) ./$(TARGET) 1.5e-9 ./examples/inv.param ./examples/wire.param ./examples/5.txt out1.pre out2 out3 out4
+	$(VAL) ./$(TARGET) 10 ./examples/fake_inv.param ./examples/fake_wire.param ./examples/3.txt out1.pre out2 out3 out4
 
 # Debug with gdb
 gdb: $(TARGET)
