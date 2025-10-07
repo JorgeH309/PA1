@@ -256,7 +256,7 @@ int elmoreDelay(Node * root, std::string& filename) {
 
 double solveQuadratic(double A, double B, double C) {
 
-    cout << "A, B, C : " << A << "," << B << "," << C << "," << endl;
+    //cout << "A, B, C : " << A << "," << B << "," << C << "," << endl;
     double discriminant = (B*B) - (4*A*C);
     double new_l = -1;
     //cout << "square root of discriminant: " << (std::sqrt(discriminant)) << endl;
@@ -270,8 +270,8 @@ double solveQuadratic(double A, double B, double C) {
 
         double first_root = (-B + (std::sqrt(discriminant))) / (2 * A);
         double second_root = (-B - (std::sqrt(discriminant))) / (2 * A);
-        cout << "first root: " << first_root << endl;
-        cout << "second root: " << second_root << endl;
+        //cout << "first root: " << first_root << endl;
+        //cout << "second root: " << second_root << endl;
 
         if (first_root > second_root) {
             if (first_root < 0) {
@@ -295,9 +295,9 @@ double solveQuadratic(double A, double B, double C) {
 Node * inverterSegmentation(Node * node, double l, double branch_time_constraint) {
 
     if (node->type==LEAF) {
-        cout << "Leaf " << node->label << "(" << node->capacitance << ")\n";
+        //cout << "Leaf " << node->label << "(" << node->capacitance << ")\n";
     } else {
-        cout <<  "Non-leaf (" << node->leftWire << "," << node->rightWire << ")\n";
+        //cout <<  "Non-leaf (" << node->leftWire << "," << node->rightWire << ")\n";
 
     }
     Node * temp = node;
@@ -315,8 +315,8 @@ Node * inverterSegmentation(Node * node, double l, double branch_time_constraint
     double C = (inv_output_res * inv_output_cap) + (inv_output_res * temp_elmore_c);
 
     double stage_delay = (A*(l*l)) + (B*l) + C;
-    cout << "stage delay: " <<stage_delay <<endl;
-    cout << "Time constraint: " <<temp_time_constraint <<endl;
+    //cout << "stage delay: " <<stage_delay <<endl;
+    //cout << "Time constraint: " <<temp_time_constraint <<endl;
 
     while (stage_delay > temp_time_constraint) {
         temp_elmore_c = temp->elmore_capacitance - ((temp_l * unit_wire_cap) / (double) 2);
@@ -327,7 +327,7 @@ Node * inverterSegmentation(Node * node, double l, double branch_time_constraint
 
         double new_l = solveQuadratic(A, B, C);
 
-        cout << "L computed: " << new_l << endl;
+        //cout << "L computed: " << new_l << endl;
         if (new_l == -1) {
             // try inserting on left and right
             return temp;
@@ -360,8 +360,8 @@ Node * inverterSegmentation(Node * node, double l, double branch_time_constraint
             stage_delay = (A*(temp_l*temp_l)) + (B*temp_l) + C;
             
             temp_time_constraint = time_constraint;
-            cout << "stage delay: " <<stage_delay <<endl;
-            cout << "Time constraint: " <<temp_time_constraint <<endl;
+            //cout << "stage delay: " <<stage_delay <<endl;
+            //cout << "Time constraint: " <<temp_time_constraint <<endl;
         }
 
 
@@ -391,7 +391,7 @@ Node* insertionPostOrder(Node * node, double l) {
             node->elmore_capacitance+=node->left->elmore_capacitance;
             node->elmore_capacitance+=(node->leftWire * unit_wire_cap) / 2;
             
-            cout << "Polarity of returned temp_left: " << temp_left->polarity << endl;
+            //cout << "Polarity of returned temp_left: " << temp_left->polarity << endl;
         }
     }
     Node * temp_right = insertionPostOrder(node->right, node->rightWire);
@@ -411,7 +411,7 @@ Node* insertionPostOrder(Node * node, double l) {
             node->elmore_capacitance+=(node->rightWire * unit_wire_cap) / 2;
             node->elmore_capacitance+=node->right->elmore_capacitance;
 
-            cout << "Polarity of returned temp_right: " << temp_right->polarity << endl;
+           // cout << "Polarity of returned temp_right: " << temp_right->polarity << endl;
 
         }
     }
@@ -443,7 +443,7 @@ Node* insertionPostOrder(Node * node, double l) {
 
             node->polarity=inv->polarity;
 
-            cout << "Added extra on left.\n";
+            //cout << "Added extra on left.\n";
         } 
         else if (temp_left->polarity == 1 && temp_right->polarity == 0){
             // insert inverter on left branch at length l
@@ -466,13 +466,13 @@ Node* insertionPostOrder(Node * node, double l) {
             node->elmore_capacitance-=old_child_cap;
 
             node->rightWire = node->right->cut_wire;
-            cout << "cut wire: " << node->right->cut_wire << endl;
+            //cout << "cut wire: " << node->right->cut_wire << endl;
             node->total_capacitance+=(node->rightWire * unit_wire_cap) / 2;
             node->elmore_capacitance+=(node->rightWire * unit_wire_cap) / 2;
             node->elmore_capacitance+=node->right->elmore_capacitance;
 
             node->polarity = inv->polarity;
-            cout << "Added extra on right.\n";
+           // cout << "Added extra on right.\n";
 
         }
         else {
@@ -488,7 +488,7 @@ Node* insertionPostOrder(Node * node, double l) {
         // if not needed return node
         // if insertion return inv node
 
-        double stage_delay = l * unit_wire_res * (node->elmore_capacitance);
+        //double stage_delay = l * unit_wire_res * (node->elmore_capacitance);
         
         return inverterSegmentation(node, l, 0);
 
@@ -553,7 +553,7 @@ int write3rdOutputPost(Node * root, const std::string& filename) {
     postOrderTraversalOutput3(root, fout);
     fout << "(" << std::scientific << (double) 0 << " " << (double)-1 << " 1)\n";
     if (root->polarity==0){
-        cout << "here\n";
+        //cout << "here\n";
         fout << "(" << std::scientific << (double) 0 << " " << (double)-1 << " 1)\n";
        
     }
@@ -577,8 +577,8 @@ int main(int argc, char **argv) {
     std::string out_name3 = argv[7];
     std::string out_name4 = argv[8];
 
-    int result = storeWireParams(in_name2);
-    result = storeInvParams(in_name1);
+    storeWireParams(in_name2);
+    storeInvParams(in_name1);
 
     /*
     cout << "Unit resistance: " << std::scientific << unit_wire_res << endl;
@@ -594,7 +594,7 @@ int main(int argc, char **argv) {
     writePre(tree, out_name1);
 
 
-    result = elmoreDelay(tree, out_name2);
+    elmoreDelay(tree, out_name2);
     
     //result = writePre(tree, out_name1);
     Node * new_tree =inverterInsertion(tree);
