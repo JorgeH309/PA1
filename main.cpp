@@ -292,6 +292,92 @@ double solveQuadratic(double A, double B, double C) {
     return new_l;
 }
 
+double robustExtremeSolution(Node * node, double l) {
+    bool left = false;
+    bool right = false;
+    double t1 = (node->leftWire)*unit_wire_res*(node->left->elmore_capacitance);
+    double t2 = (node->rightWire)*unit_wire_res*(node->right->elmore_capacitance);
+
+    if (t1 > t2) {
+        // add inverter on left
+        Node * inv = new Node(inv_input_cap, 0, true);
+        inv->leftWire = node->leftWire;
+        inv->rightWire = -1;
+        inv->left = node->left;
+        inv->total_capacitance=inv->capacitance + ((inv->cut_wire * unit_wire_cap) / 2);
+        inv->elmore_capacitance = inv->total_capacitance;
+
+        inv->polarity = (1 + inv->left->polarity)%2;
+
+        double old_child_cap = node->left->elmore_capacitance;
+        node->left = inv;
+        
+        node->total_capacitance-=(node->leftWire * unit_wire_cap) / 2;
+        node->elmore_capacitance-=(node->leftWire * unit_wire_cap) / 2;; 
+        node->elmore_capacitance-=old_child_cap; 
+
+        node->leftWire = node->left->cut_wire;
+        node->total_capacitance+=(node->leftWire * unit_wire_cap) / 2; //good
+        node->elmore_capacitance+=node->left->elmore_capacitance;
+        node->elmore_capacitance+=(node->leftWire * unit_wire_cap) / 2;
+
+        node->polarity=inv->polarity;
+
+
+    }
+
+    else if (t1 < t2) {
+        // add inverter on right
+        Node * inv = new Node(inv_input_cap, 0, true);
+        inv->leftWire = node->rightWire;
+        inv->rightWire = -1;
+
+        inv->left = node->right;
+        inv->total_capacitance=inv->capacitance + ((inv->cut_wire * unit_wire_cap) / 2);
+
+        inv->elmore_capacitance = inv->total_capacitance;
+
+        inv->polarity = (1 + inv->left->polarity)%2;
+        
+        double old_child_cap = node->right->elmore_capacitance;
+        node->right = inv;
+
+        node->total_capacitance-=(node->rightWire * unit_wire_cap) / 2;
+        node->elmore_capacitance-=(node->rightWire * unit_wire_cap) / 2;
+        node->elmore_capacitance-=old_child_cap;
+
+        node->rightWire = node->right->cut_wire;
+        node->total_capacitance+=(node->rightWire * unit_wire_cap) / 2;
+        node->elmore_capacitance+=(node->rightWire * unit_wire_cap) / 2;
+        node->elmore_capacitance+=node->right->elmore_capacitance;
+
+        node->polarity = inv->polarity;
+        cout << "Added extra on right.\n";
+    }
+
+
+    t1 = (node->leftWire)*unit_wire_res*(node->left->elmore_capacitance);
+    t2 = (node->rightWire)*unit_wire_res*(node->right->elmore_capacitance);
+    double temp_time_constraint = (t1 > t2 ? t1 : t2);
+
+
+    double temp_elmore_c = node->elmore_capacitance - ((l * unit_wire_cap) / (double) 2);
+    // Quadratic coefficients
+    double A = (unit_wire_cap * unit_wire_res) / 2;
+    double B = (inv_output_res * unit_wire_cap) + (unit_wire_res * temp_elmore_c);
+    double C = (inv_output_res * inv_output_cap) + (inv_output_res * temp_elmore_c) - temp_time_constraint;
+
+    double new_l = solveQuadratic(A, B, C);
+
+    if (new_l == -1) {
+        if (left) {
+            // insert on right
+        } else if (right) {
+            // insert on left
+        }
+    }
+}
+
 Node * inverterSegmentation(Node * node, double l, double branch_time_constraint) {
 
     if (node->type==LEAF) {
@@ -330,8 +416,13 @@ Node * inverterSegmentation(Node * node, double l, double branch_time_constraint
         cout << "L computed: " << new_l << endl;
         if (new_l == -1) {
             // try inserting on left and right
+            new_l = robustExtremeSolution(temp, temp_l);
+        }
+
+        if (new_l == -1) {
             return temp;
-        } else {
+        }
+            {
             Node * inv = new Node(inv_input_cap, temp_l - new_l, true);
             inv->leftWire = new_l;
             inv->rightWire = -1;
